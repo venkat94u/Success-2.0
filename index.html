@@ -4,9 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Mobile Orderflow — Balanced Institutional Dashboard (Deep Walls)</title>
-
-<!-- Combined Final File: HTML + CSS + JS (WS + REST deep snapshots + Historical replay) -->
-
+<!-- =========================
+     STYLES — Improved UI
+     Part 1 of 3
+     ========================= -->
 <style>
 :root{
   --bg:#071226;
@@ -21,28 +22,34 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 .wrap{max-width:1180px;margin:12px auto;padding:14px}
+/* Header */
 .header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .title{font-size:20px;margin:0 0 2px 0;font-weight:600}
 .subtitle{font-size:13px;color:var(--muted)}
+/* Controls */
 .controls{display:flex;gap:8px;align-items:center}
 select,input,button{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#071b2b;color:var(--text);font-size:13px}
 select{min-width:180px}
 button{cursor:pointer}
+/* Layout */
 .card{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.45);margin-top:12px;border:1px solid var(--border)}
 .row{display:flex;justify-content:space-between;align-items:center}
 .muted{color:var(--muted);font-size:13px}
 .grid{display:grid;grid-template-columns:1fr 380px;gap:14px;margin-top:12px}
 @media (max-width:920px){ .grid{grid-template-columns:1fr} .header{flex-direction:column;align-items:flex-start} }
+/* trade list */
 .trade-list{height:260px;overflow:auto;padding:6px;margin-top:8px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
 .trade{display:flex;justify-content:space-between;padding:6px;border-radius:6px;margin-bottom:4px;font-size:13px}
 .buy{color:var(--buy)} .sell{color:var(--sell)}
 .small{font-size:12px;color:var(--muted)}
+/* panels and misc */
 .table{font-size:13px;line-height:1.45}
 .badge{display:inline-block;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px}
 .alertBox{padding:12px;border-radius:10px;margin-bottom:10px}
 .swing-high{background:rgba(255,90,90,0.10);border:1px solid rgba(255,90,90,0.25);color:#ffb3b3}
 .swing-low{background:rgba(0,210,130,0.10);border:1px solid rgba(0,210,130,0.28);color:#baffdf}
 #swingPanelContainer{max-height:260px;overflow-y:auto;margin-bottom:6px}
+/* Deep walls radar */
 .radar{
   display:flex;
   gap:10px;
@@ -52,15 +59,22 @@ button{cursor:pointer}
 .radar .row{align-items:flex-start}
 .radar .col{flex:1;min-height:160px;max-height:360px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border)}
 .radar h4{margin:0 0 6px 0;font-size:14px}
+/* L2 walls */
 .l2-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
 .l2-grid .table{max-height:280px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01)}
+/* utility */
 .center{display:flex;align-items:center;justify-content:center}
 .hidden{display:none}
+/* swing rating stars formatting */
 .stars{font-family: "Segoe UI Symbol", "Noto Color Emoji", "Apple Color Emoji", sans-serif;letter-spacing:2px}
+.big{font-size:18px;font-weight:600;margin-top:4px}
+.small-input{font-size:12px;padding:6px 8px}
+.footer-note{opacity:0.7;font-size:11px}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <!-- HEADER -->
   <div class="header">
     <div>
       <h1 class="title">Orderflow Analyst — Balanced (Mobile)</h1>
@@ -70,7 +84,7 @@ button{cursor:pointer}
       <label class="small muted">Symbol</label>
       <select id="symbol"></select>
       <label class="small muted">Mode</label>
-      <select id="modeSelect">
+      <select id="modeSelect" title="Data mode">
         <option value="ws">WS only (fast)</option>
         <option value="rest">REST deep (snapshot)</option>
         <option value="both" selected>Both (recommended)</option>
@@ -80,12 +94,11 @@ button{cursor:pointer}
       <span id="status" class="small muted">Disconnected</span>
     </div>
   </div>
-
+  <!-- TOP STATS -->
   <div class="card">
     <div class="row">
       <div style="flex:1">
         <div id="swingPanelContainer"></div>
-
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
           <div>
             <div class="small muted">Calibration</div>
@@ -109,26 +122,25 @@ button{cursor:pointer}
         <div class="small muted">Tune</div>
         <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px">
           <label class="small muted">WallSize</label>
-          <input id="wallSize" value="50" style="width:70px"/>
+          <input id="wallSize" class="small-input" value="50" style="width:70px"/>
           <label class="small muted">Burst</label>
-          <input id="burstCnt" value="8" style="width:70px"/>
+          <input id="burstCnt" class="small-input" value="8" style="width:70px"/>
         </div>
       </div>
     </div>
   </div>
-
+  <!-- GRID -->
   <div class="grid">
+    <!-- LEFT COLUMN -->
     <div>
       <div class="card">
         <div class="small muted">Sweep & Divergence</div>
         <div id="sweepInfo" style="margin-top:8px">Sweep: — | Divergence: —</div>
       </div>
-
       <div class="card">
         <div class="small muted">Divergence Detail</div>
         <div id="divergenceInfo" style="margin-top:8px">—</div>
       </div>
-
       <div class="card">
         <div class="small muted">Market Order Bursts</div>
         <div style="display:flex;gap:14px;margin-top:10px">
@@ -137,7 +149,6 @@ button{cursor:pointer}
           <div><div class="small muted">Aggressive</div><div id="aggr" class="big">—</div></div>
         </div>
       </div>
-
       <div class="card">
         <div class="row">
           <div class="small muted">Recent Trades (live)</div>
@@ -145,13 +156,12 @@ button{cursor:pointer}
         </div>
         <div id="trades" class="trade-list"></div>
       </div>
-
       <div class="card">
         <div class="small muted">Logs</div>
         <div id="logs" style="max-height:120px;overflow:auto;margin-top:8px" class="small"></div>
       </div>
     </div>
-
+    <!-- RIGHT COLUMN -->
     <div>
       <div class="card">
         <div class="small muted">Top-of-book</div>
@@ -160,25 +170,21 @@ button{cursor:pointer}
           <div><div class="small muted">Best Ask</div><div id="bestAsk" class="big">-</div></div>
         </div>
       </div>
-
       <div class="card">
         <div class="small muted">Wall Clusters</div>
         <div style="margin-top:8px">
           <div class="small muted">Buy clusters: <span id="buyCluster">0</span></div>
           <div class="small muted">Sell clusters: <span id="sellCluster">0</span></div>
-
           <div style="margin-top:10px">
             <div class="small muted">Top buy walls</div>
             <div id="topBids" class="table"></div>
           </div>
-
           <div style="margin-top:10px">
             <div class="small muted">Top sell walls</div>
             <div id="topAsks" class="table"></div>
           </div>
         </div>
       </div>
-
       <div class="card">
         <div class="small muted">Controls</div>
         <div style="display:flex;gap:8px;margin-top:8px">
@@ -189,7 +195,7 @@ button{cursor:pointer}
       </div>
     </div>
   </div>
-
+  <!-- DEEP WALL RADAR (NEW) -->
   <div class="card">
     <div class="small muted">Deep Liquidity Radar (Far Walls)</div>
     <div class="radar" style="margin-top:10px">
@@ -204,7 +210,6 @@ button{cursor:pointer}
           <div id="farSells" class="col table">—</div>
         </div>
       </div>
-
       <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
         <label class="small muted">Distance filter (%)</label>
         <input id="radarDistPct" value="2" style="width:70px" />
@@ -214,7 +219,7 @@ button{cursor:pointer}
       </div>
     </div>
   </div>
-
+  <!-- L2 walls bottom -->
   <div class="card">
     <div class="small muted">L2 Walls (depth20)</div>
     <div class="l2-grid" style="margin-top:8px">
@@ -228,31 +233,31 @@ button{cursor:pointer}
       </div>
     </div>
   </div>
-
-</div>
+</div> <!-- wrap -->
 
 <!-- ============================
-     JS: Core Engine + Deep Radar + Historical Replay
-     (Parts 2 + 3 combined; historical replay integrated)
+     Part 2/3 — Core JS Engine
+     - Symbol loader
+     - WS connect / messages
+     - Trade & depth handlers
+     - Aggregation (1m / 5m) with price
+     - Divergence detection
+     - Swing engine & stars
+     - UI updates + controls
      ============================ -->
 <script>
-/* ============================
-   CONFIG
-   ============================ */
+/* ---------- CONFIG ---------- */
 const CALIBRATION_SECONDS = 180;
 const WALL_SIZE_DEFAULT = 50;
 const BURST_WINDOW_MS = 2500;
 const MAX_TRADES_DISPLAY = 200;
 const AGG_MAX = 200;
 
-/* ============================
-   STATE
-   ============================ */
+/* ---------- STATE ---------- */
 let ws = null;
 let running = false;
 let symbol = null;
 let useMode = 'both'; // 'ws' | 'rest' | 'both'
-
 let buyVol = 0, sellVol = 0, cumDelta = 0;
 let recentTrades = []; // {price, qty, side, ts}
 let bids = [], asks = [];
@@ -260,38 +265,23 @@ let lastPrice = null, lastPrice2 = null;
 let lastHigh = null, lastLow = null;
 let lastDeltaSide = null;
 let lastOrderbookSnapshot = null;
-
 let agg1m = []; // {tStart, buyVol, sellVol, delta, price}
 let agg5m = []; // same structure
 
-/* deep walls */
-let deepBids = [];
-let deepAsks = [];
-let deepFetchTimer = null;
-let farRadarTimer = null;
-let deepFetchIntervalMs = 15000;
-let farRadarRefreshMs = 1000;
-let lastDeepFetchAt = 0;
-
-/* ============================
-   UI REFS
-   ============================ */
+/* ---------- UI refs ---------- */
 const symbolSelect = document.getElementById('symbol');
 const modeSelect = document.getElementById('modeSelect');
 const connectBtn = document.getElementById('connectBtn');
 const disconnectBtn = document.getElementById('disconnectBtn');
 const statusEl = document.getElementById('status');
-
 const tradesEl = document.getElementById('trades');
 const logsEl = document.getElementById('logs');
 const buyWallsEl = document.getElementById('buyWalls');
 const sellWallsEl = document.getElementById('sellWalls');
 const topBidsEl = document.getElementById('topBids');
 const topAsksEl = document.getElementById('topAsks');
-
 const buyClusterEl = document.getElementById('buyCluster');
 const sellClusterEl = document.getElementById('sellCluster');
-
 const volsEl = document.getElementById('vols');
 const cumlEl = document.getElementById('cumlDelta');
 const strengthEl = document.getElementById('strength');
@@ -301,23 +291,13 @@ const swingPanelContainer = document.getElementById('swingPanelContainer');
 const buyBurstEl = document.getElementById('buyBurst');
 const sellBurstEl = document.getElementById('sellBurst');
 const aggrEl = document.getElementById('aggr');
-
 const wallSizeInput = document.getElementById('wallSize');
 const burstCntInput = document.getElementById('burstCnt');
-
 const clearBtn = document.getElementById('clearBtn');
 const downloadBtn = document.getElementById('downloadBtn');
-
 const calibEl = document.getElementById('calib');
 
-const farBuysEl = document.getElementById('farBuys');
-const farSellsEl = document.getElementById('farSells');
-const radarDistPctInput = document.getElementById('radarDistPct');
-const radarMinQtyInput = document.getElementById('radarMinQty');
-
-/* ============================
-   HELPERS
-   ============================ */
+/* ---------- UTIL ---------- */
 const f = v => (v === undefined || v === null) ? 0 : parseFloat(v);
 const now = () => Date.now();
 function log(msg){
@@ -327,9 +307,8 @@ function log(msg){
   if(logsEl.childElementCount > 300) logsEl.removeChild(logsEl.lastChild);
 }
 
-/* ============================
-   SYMBOL LOADER
-   ============================ */
+/* ---------- SYMBOL LOADER ---------- */
+/* loads Binance USDT perpetual symbols into the dropdown */
 async function loadSymbols(){
   const url = "https://fapi.binance.com/fapi/v1/exchangeInfo";
   try{
@@ -341,12 +320,14 @@ async function loadSymbols(){
       .sort();
     if(list.length === 0) throw new Error("No symbols");
     symbolSelect.innerHTML = list.map(s => `<option>${s}</option>`).join('');
+    // select BTCUSDT by default if present
     const defIdx = list.indexOf('BTCUSDT');
     if(defIdx>=0) symbolSelect.selectedIndex = defIdx;
     symbol = symbolSelect.value;
     log(`Loaded ${list.length} symbols`);
   }catch(e){
     console.warn("Symbol load failed", e);
+    // fallback
     symbolSelect.innerHTML = `<option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option>`;
     symbol = symbolSelect.value;
     log('Symbol list fallback applied');
@@ -354,30 +335,36 @@ async function loadSymbols(){
 }
 loadSymbols();
 
-/* ============================
-   UI SCHEDULER & UPDATE
-   ============================ */
+/* ---------- UI SCHEDULER ---------- */
 let uiTimer = null;
-function scheduleUI(){ if(uiTimer) return; uiTimer = setTimeout(()=>{ uiTimer = null; updateUI(); }, 120); }
+function scheduleUI(){
+  if(uiTimer) return;
+  uiTimer = setTimeout(()=>{ uiTimer = null; updateUI(); }, 120);
+}
 
+/* ---------- UPDATE UI ---------- */
 function updateUI(){
   volsEl.innerText = `${buyVol.toFixed(6)} / ${sellVol.toFixed(6)}`;
   cumlEl.innerText = cumDelta.toFixed(6);
+  // best bid/ask from L2 snapshot
   const bidsByPrice = bids.map(x=>[f(x[0]), f(x[1])]).sort((a,b)=>b[0]-a[0]);
   const asksByPrice = asks.map(x=>[f(x[0]), f(x[1])]).sort((a,b)=>a[0]-b[0]);
   document.getElementById('bestBid').innerText = bidsByPrice.length ? bidsByPrice[0][0] : '-';
   document.getElementById('bestAsk').innerText = asksByPrice.length ? asksByPrice[0][0] : '-';
+  // top walls list
   const topB = bidsByPrice.slice().sort((a,b)=>b[1]-a[1]).slice(0,12);
   const topA = asksByPrice.slice().sort((a,b)=>b[1]-a[1]).slice(0,12);
   topBidsEl.innerHTML = topB.map(it=>`${it[0]} — ${it[1]}`).join('<br>');
   topAsksEl.innerHTML = topA.map(it=>`${it[0]} — ${it[1]}`).join('<br>');
   buyWallsEl.innerHTML = bidsByPrice.map(it=>`${it[0]} — ${it[1]}`).join('<br>');
   sellWallsEl.innerHTML = asksByPrice.map(it=>`${it[0]} — ${it[1]}`).join('<br>');
+  // clusters
   const wallSize = parseFloat(wallSizeInput.value) || WALL_SIZE_DEFAULT;
   const buyClusterCount = topB.filter(it=>it[1] > wallSize).length;
   const sellClusterCount = topA.filter(it=>it[1] > wallSize).length;
   buyClusterEl.innerText = String(buyClusterCount);
   sellClusterEl.innerText = String(sellClusterCount);
+  // bursts
   const windowStart = now() - BURST_WINDOW_MS;
   const recentWindow = recentTrades.filter(r => r.ts >= windowStart);
   const buyAgg = recentWindow.filter(r => r.side === 'buy').length;
@@ -385,17 +372,24 @@ function updateUI(){
   buyBurstEl.innerText = String(buyAgg);
   sellBurstEl.innerText = String(sellAgg);
   aggrEl.innerText = buyAgg>sellAgg ? 'BUY' : (sellAgg>buyAgg ? 'SELL' : '—');
+  // strength
   const ratio = buyVol / Math.max(sellVol, 1e-9);
   if(ratio > 1.6) strengthEl.innerText = 'BUYERS DOMINANT';
   else if(ratio > 1.2) strengthEl.innerText = 'Buyers Strong';
   else if(ratio < 0.4) strengthEl.innerText = 'SELLERS DOMINANT';
   else if(ratio < 0.6) strengthEl.innerText = 'Sellers Strong';
   else strengthEl.innerText = 'Balanced';
+  
+  // update divergence periodically
+  try{ 
+    const divText = detectDeltaDivergence();
+    divergenceInfoEl.innerHTML = divText;
+  }catch(e){ 
+    divergenceInfoEl.innerText = '—'; 
+  }
 }
 
-/* ============================
-   CLEAR STATE
-   ============================ */
+/* ---------- CLEAR STATE ---------- */
 function clearAll(){
   buyVol = 0; sellVol = 0; cumDelta = 0;
   recentTrades = [];
@@ -410,20 +404,21 @@ function clearAll(){
   log('State cleared');
 }
 
-/* ============================
-   AGGREGATION
-   ============================ */
+/* ---------- AGGREGATION ---------- */
 function aggregateConfluence(price, qty, side, ts){
   const minute = Math.floor(ts / 60000) * 60000;
   const fiveMinute = Math.floor(ts / (5*60000)) * (5*60000);
+  // 1m bucket
   let b1 = (agg1m.length && agg1m[agg1m.length-1].tStart === minute) ? agg1m[agg1m.length-1] : null;
   if(!b1){
     b1 = { tStart: minute, buyVol:0, sellVol:0, delta:0, price: price };
     agg1m.push(b1);
     if(agg1m.length > AGG_MAX) agg1m.shift();
   }
+  // always update latest price for bucket
   b1.price = price;
   if(side === 'buy'){ b1.buyVol += qty; b1.delta += qty; } else { b1.sellVol += qty; b1.delta -= qty; }
+  // 5m
   let b5 = (agg5m.length && agg5m[agg5m.length-1].tStart === fiveMinute) ? agg5m[agg5m.length-1] : null;
   if(!b5){
     b5 = { tStart: fiveMinute, buyVol:0, sellVol:0, delta:0, price: price };
@@ -434,37 +429,68 @@ function aggregateConfluence(price, qty, side, ts){
   if(side === 'buy'){ b5.buyVol += qty; b5.delta += qty; } else { b5.sellVol += qty; b5.delta -= qty; }
 }
 
-/* ============================
-   DIVERGENCE DETECTION
-   ============================ */
+/* ---------- DIVERGENCE DETECTION ---------- */
+/* Using last 4 1-minute buckets: check price vs delta divergence */
 function detectDeltaDivergence(){
-  if(agg1m.length < 4) return '—';
+  if(agg1m.length === 0) {
+    return `No data yet`;
+  }
+  
+  if(agg1m.length < 4) {
+    // Show partial information if we have some buckets
+    const available = agg1m.slice(-agg1m.length);
+    if(available.length >= 2) {
+      const first = available[0];
+      const last = available[available.length - 1];
+      const priceChange = ((last.price - first.price) / first.price) * 100;
+      const deltaChange = last.delta - first.delta;
+      return `Collecting data (${agg1m.length}/4 buckets)<br><small style="opacity:0.7">Current: Price ${priceChange >= 0 ? '↑' : '↓'}${Math.abs(priceChange).toFixed(2)}%, Delta ${deltaChange >= 0 ? '↑' : '↓'}${Math.abs(deltaChange).toFixed(2)}</small>`;
+    }
+    return `Waiting for data (${agg1m.length}/4 buckets)`;
+  }
+  
   const last4 = agg1m.slice(-4);
+  // compare first vs last
   const p0 = last4[0].price;
   const p3 = last4[3].price;
   const d0 = last4[0].delta;
   const d3 = last4[3].delta;
-  if(typeof p0 !== 'number' || typeof p3 !== 'number' || typeof d0 !== 'number' || typeof d3 !== 'number') return '—';
-  const priceUp = p3 > p0 + 0;
-  const deltaDown = d3 < d0 - 0;
-  const priceDown = p3 < p0 - 0;
-  const deltaUp = d3 > d0 + 0;
-  if(priceUp && deltaDown) return 'BEAR divergence';
-  if(priceDown && deltaUp) return 'BULL divergence';
-  return 'No divergence';
+  // guard
+  if(typeof p0 !== 'number' || typeof p3 !== 'number' || typeof d0 !== 'number' || typeof d3 !== 'number') {
+    return 'Invalid data';
+  }
+  const priceChange = ((p3 - p0) / p0) * 100;
+  const deltaChange = d3 - d0;
+  const priceUp = p3 > p0;
+  const deltaDown = d3 < d0;
+  const priceDown = p3 < p0;
+  const deltaUp = d3 > d0;
+  
+  let result = '';
+  if(priceUp && deltaDown) {
+    result = `BEAR divergence: Price ↑${priceChange.toFixed(2)}% but Delta ↓${deltaChange.toFixed(2)}`;
+  } else if(priceDown && deltaUp) {
+    result = `BULL divergence: Price ↓${Math.abs(priceChange).toFixed(2)}% but Delta ↑${deltaChange.toFixed(2)}`;
+  } else {
+    result = `No divergence: Price ${priceChange >= 0 ? '↑' : '↓'}${Math.abs(priceChange).toFixed(2)}%, Delta ${deltaChange >= 0 ? '↑' : '↓'}${Math.abs(deltaChange).toFixed(2)}`;
+  }
+  
+  // Add bucket details
+  result += `<br><small style="opacity:0.7">Buckets: P0=${p0.toFixed(2)} Δ0=${d0.toFixed(2)} → P3=${p3.toFixed(2)} Δ3=${d3.toFixed(2)}</small>`;
+  
+  return result;
 }
 
-/* ============================
-   SWING ENGINE
-   ============================ */
+/* ---------- SWING ENGINE ---------- */
+/* rateSwing returns star string */
 function rateSwing(st){
   const flags = [st.sweep, st.deltaFlip, st.momentum, st.wallShift, st.reaction];
+  // flags are 'YES' / 'NO' -> count YES
   const n = flags.filter(x=>x==='YES').length;
   const filled = '★'.repeat(n);
   const empty = '☆'.repeat(5 - n);
   return `<span class="stars">${filled}${empty}</span>`;
 }
-
 function showSwingPanel(type, price, st){
   const color = type === 'HIGH' ? '#ff4444' : '#00ff88';
   const title = type === 'HIGH' ? 'SWING HIGH' : 'SWING LOW';
@@ -485,6 +511,7 @@ function showSwingPanel(type, price, st){
   log(`${title} @ ${price} | ${stars.replace(/<.*?>/g,'')}`);
 }
 
+/* simplified wallShift detection (uses last orderbook snapshot) */
 function wallShiftDetected(){
   if(!lastOrderbookSnapshot) return false;
   try{
@@ -496,13 +523,15 @@ function wallShiftDetected(){
   }catch(e){ return false; }
 }
 
+/* core detectSwing called on each trade */
 function detectSwing(price){
   const deltaSide = cumDelta > 0 ? 'buy' : 'sell';
   const deltaFlipToBuy = lastDeltaSide === 'sell' && deltaSide === 'buy';
   const deltaFlipToSell = lastDeltaSide === 'buy' && deltaSide === 'sell';
+  // sweep: price breaks previous lastHigh/lastLow
   const sweepHigh = (lastHigh !== null && price > lastHigh);
   const sweepLow  = (lastLow !== null && price < lastLow);
-  const momentum = Math.abs(cumDelta) > 25;
+  const momentum = Math.abs(cumDelta) > 25; // tunable threshold
   const wallShift = wallShiftDetected();
   const reaction = (lastPrice2 !== null) ? (Math.abs(price - lastPrice2) > Math.abs(lastPrice - lastPrice2) * 1.5) : false;
   const swingStatus = {
@@ -512,119 +541,127 @@ function detectSwing(price){
     wallShift: wallShift ? 'YES' : 'NO',
     reaction: reaction ? 'YES' : 'NO'
   };
+  // fire when mandatory combo meets:
   if(sweepHigh && deltaFlipToSell){
     showSwingPanel('HIGH', price, swingStatus);
   }
   if(sweepLow && deltaFlipToBuy){
     showSwingPanel('LOW', price, swingStatus);
   }
+  // update lastDeltaSide and swing memory
   lastDeltaSide = deltaSide;
   if(lastHigh === null || price > lastHigh) lastHigh = price;
   if(lastLow === null || price < lastLow) lastLow = price;
 }
 
-/* ============================
-   HANDLERS: depth & trade
-   ============================ */
+/* ---------- HANDLERS: depth & trade ---------- */
 function handleDepthPayload(payload){
+  // Binance depth uses arrays of [price, qty]
   if(payload.b) bids = payload.b.slice();
   if(payload.a) asks = payload.a.slice();
   lastOrderbookSnapshot = { bids: bids.slice(), asks: asks.slice() };
   scheduleUI();
 }
-
 function handleTradePayload(t){
+  // t.p price, t.q qty, t.m maker flag, t.ts optional timestamp (for historical replay)
   const price = f(t.p);
   const qty = f(t.q);
   const isMaker = !!t.m;
   const side = isMaker ? 'sell' : 'buy';
-  const ts = now();
+  const ts = t.ts || now(); // Use provided timestamp for historical replay, otherwise current time
+  // record
   recentTrades.unshift({ price, qty, side, ts });
   if(recentTrades.length > 2000) recentTrades.pop();
+  // update vol/delta
   if(side === 'buy'){ buyVol += qty; cumDelta += qty; }
   else { sellVol += qty; cumDelta -= qty; }
+  // update price history
   lastPrice2 = lastPrice;
   lastPrice = price;
+  // aggregate
   aggregateConfluence(price, qty, side, ts);
+  // display
   const el = document.createElement('div');
   el.className = 'trade ' + (side === 'buy' ? 'buy' : 'sell');
   el.innerHTML = `<div style="opacity:0.9">${side.toUpperCase()} <span style="opacity:0.6">${price}</span></div><div>${qty.toFixed(6)}</div>`;
   tradesEl.prepend(el);
   while(tradesEl.childElementCount > MAX_TRADES_DISPLAY) tradesEl.removeChild(tradesEl.lastChild);
+  // detect swing
   detectSwing(price);
-  try{ divergenceInfoEl.innerText = detectDeltaDivergence(); }catch(e){ divergenceInfoEl.innerText = '—'; }
+  // update divergence UI
+  try{ 
+    const divText = detectDeltaDivergence();
+    divergenceInfoEl.innerHTML = divText;
+  }catch(e){ 
+    divergenceInfoEl.innerText = '—'; 
+  }
+  // update sweep UI (sweep rebuilt in detectSwing logic)
   const sweepText = (lastHigh === null && lastLow === null) ? '—' : `Sweep: High=${(lastPrice>lastHigh? 'YES':'NO')} | Low=${(lastPrice<lastLow? 'YES':'NO')}`;
   sweepInfoEl.innerText = sweepText;
   scheduleUI();
 }
 
-/* ============================
-   CONNECT / WS
-   ============================ */
+/* ---------- CONNECT / WS ---------- */
 connectBtn.addEventListener('click', () => {
   if(running) return;
   symbol = symbolSelect.value.trim();
   useMode = modeSelect.value || 'both';
   if(!symbol){ alert('Select a symbol'); return; }
-
   clearAll(); // clear before replay
   const stream = `${symbol.toLowerCase()}@trade/${symbol.toLowerCase()}@depth20@100ms`;
   const url = `wss://fstream.binance.com/stream?streams=${stream}`;
-
   ws = new WebSocket(url);
   statusEl.innerText = 'Connecting...';
-
   ws.onopen = () => {
     statusEl.innerText = 'Connected';
     running = true;
     connectBtn.style.display = 'none';
     disconnectBtn.style.display = 'inline-block';
     log('WS open');
-
-    // Historical replay: load last 10 minutes of aggTrades, then engine will be initialized
+    // Historical replay: load last 20 minutes of aggTrades, then engine will be initialized
     loadHistoricalTrades(symbol).then(() => {
       log("Historical baseline built. Now live data will be accurate instantly.");
     });
-
     startCalibration();
-
-    // start deep polling if needed (Part3)
+    // start deep polling if needed
     if(useMode === 'rest' || useMode === 'both'){
       startDeepPolling();
     }
   };
-
   ws.onmessage = ev => {
     try{
       const msg = JSON.parse(ev.data);
       const payload = msg.data || msg;
       if(!payload) return;
+      // trades
       if(payload.e === 'trade' || payload.e === 'aggTrade' || payload.p){
         const trade = payload.e ? payload : payload.data || payload;
         handleTradePayload(trade);
       }
+      // depth
       if(payload.b || payload.a){
         const depth = payload;
         handleDepthPayload(depth);
+      }
+      // sometimes payload is nested in 'data' again
+      if(Array.isArray(payload) && payload.length){
+        // ignore
       }
     }catch(e){
       console.warn('ws parse', e);
     }
   };
-
   ws.onerror = e => {
     statusEl.innerText = 'WS error';
     log('WS error');
     console.error(e);
   };
-
   ws.onclose = () => {
     statusEl.innerText = 'Disconnected';
     running = false;
     connectBtn.style.display = 'inline-block';
     disconnectBtn.style.display = 'none';
     stopCalibration();
-    stopDeepPolling();
     log('WS closed');
   };
 });
@@ -640,9 +677,7 @@ disconnectBtn.addEventListener('click', () => {
   stopDeepPolling();
 });
 
-/* ============================
-   DOWNLOAD CSV, CLEAR, CALIBRATION
-   ============================ */
+/* ---------- DOWNLOAD CSV ---------- */
 downloadBtn.addEventListener('click', () => {
   const rows = ['side,price,qty'];
   bids.forEach(b => rows.push(`bid,${b[0]},${b[1]}`));
@@ -653,8 +688,10 @@ downloadBtn.addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
+/* ---------- CLEAR ---------- */
 clearBtn.addEventListener('click', clearAll);
 
+/* ---------- CALIBRATION ---------- */
 let calibrationStartedAt = null;
 let calibrationInterval = null;
 function startCalibration(){
@@ -680,16 +717,14 @@ function stopCalibration(){
   if(calibrationInterval) clearInterval(calibrationInterval);
 }
 
-/* ============================
-   HISTORICAL REPLAY (last 10 minutes) - Option A
-   ============================ */
+/* ---------- HISTORICAL REPLAY (last 20 minutes) ---------- */
 async function loadHistoricalTrades(sym){
   try {
     const endTime = Date.now();
-    const startTime = endTime - (10 * 60 * 1000); // last 10 minutes
-    log(`Fetching 10 min historical trades for ${sym}...`);
+    const startTime = endTime - (20 * 60 * 1000); // last 20 minutes
+    log(`Fetching 20 min historical trades for ${sym}...`);
     // Binance aggTrades supports startTime,endTime but may return up to 1000 items per request.
-    // We'll fetch in a loop if needed, but usually 10 minutes fits in 1000 aggTrades for many symbols.
+    // We'll fetch in a loop if needed, but usually 20 minutes fits in 1000 aggTrades for many symbols.
     const url = `https://fapi.binance.com/fapi/v1/aggTrades?symbol=${encodeURIComponent(sym)}&startTime=${startTime}&endTime=${endTime}&limit=1000`;
     const res = await fetch(url);
     const data = await res.json();
@@ -698,10 +733,21 @@ async function loadHistoricalTrades(sym){
       return;
     }
     log(`Loaded ${data.length} historical trades — Replaying...`);
-    // Replay each trade (small delay avoided for speed)
+    // Replay each trade with actual timestamps for proper aggregation
     for(const t of data){
-      const trade = { p: t.p, q: t.q, m: t.m };
+      // Use actual trade timestamp (T is in milliseconds)
+      const tradeTs = t.T || t.t || Date.now();
+      const trade = { p: t.p, q: t.q, m: t.m, ts: tradeTs };
       handleTradePayload(trade);
+    }
+    // Force UI update after replay to show divergence immediately
+    updateUI();
+    // Force divergence update
+    try{ 
+      const divText = detectDeltaDivergence();
+      divergenceInfoEl.innerHTML = divText;
+    }catch(e){ 
+      divergenceInfoEl.innerText = '—'; 
     }
     log("Historical replay complete — Engine is fully initialized!");
   } catch (e) {
@@ -710,12 +756,50 @@ async function loadHistoricalTrades(sym){
   }
 }
 
-/* ============================
-   DEEP SNAPSHOT (REST) + FAR RADAR
-   ============================ */
-function safeParseNumber(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : 0; }
-function formatPrice(p){ return (typeof p === 'number') ? p.toFixed(4) : String(p); }
+/* ---------- INITIALIZE ---------- */
+clearAll();
+updateUI();
+log('Dashboard ready. Click Connect.');
 
+// lightweight UI updater
+setInterval(()=>{ scheduleUI(); }, 1000);
+
+/* ---------- Switch symbol mode updates ---------- */
+modeSelect.addEventListener('change', (e)=>{ useMode = e.target.value; });
+</script>
+
+<!-- ============================
+     Part 3/3 — Deep Snapshot + Far-Wall Radar
+     - Uses REST depth=1000 snapshots (fapi.binance.com)
+     - Combines WS top20 (live) + REST deep (far walls)
+     - Finds 5 large buys below price and 5 large sells above price
+     ============================ -->
+<script>
+/* ---------- STATE for deep walls ---------- */
+let deepBids = []; // full deep snapshot from REST: [[price, qty], ...]
+let deepAsks = [];
+let deepFetchTimer = null;
+let farRadarTimer = null;
+let deepFetchIntervalMs = 15000; // fetch REST deep snapshot every 15s
+let farRadarRefreshMs = 1000;    // recompute far walls every 1s
+let lastDeepFetchAt = 0;
+
+/* ---------- UI refs (radar) ---------- */
+const farBuysEl = document.getElementById('farBuys');
+const farSellsEl = document.getElementById('farSells');
+const radarDistPctInput = document.getElementById('radarDistPct');
+const radarMinQtyInput = document.getElementById('radarMinQty');
+
+/* ---------- HELPERS ---------- */
+function safeParseNumber(v){
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+}
+function formatPrice(p){
+  return (typeof p === 'number') ? p.toFixed(4) : String(p);
+}
+
+/* ---------- DEEP SNAPSHOT FETCH ---------- */
 async function fetchDeepSnapshot(sym){
   if(!sym) return;
   const url = `https://fapi.binance.com/fapi/v1/depth?symbol=${encodeURIComponent(sym)}&limit=1000`;
@@ -724,68 +808,123 @@ async function fetchDeepSnapshot(sym){
     const res = await fetch(url);
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    deepBids = (data.b || []).map(x => [safeParseNumber(x[0]), safeParseNumber(x[1])]);
-    deepAsks = (data.a || []).map(x => [safeParseNumber(x[0]), safeParseNumber(x[1])]);
+    // Binance depth API returns 'bids' and 'asks' arrays (or 'b' and 'a' in some formats)
+    // Each entry is [price, quantity] as strings
+    const bidsData = data.bids || data.b || [];
+    const asksData = data.asks || data.a || [];
+    
+    if(bidsData.length === 0 && asksData.length === 0){
+      log(`Deep snapshot warning: Empty response for ${sym}. Response keys: ${Object.keys(data).join(', ')}`);
+      console.log('Full API response:', data);
+    }
+    
+    deepBids = bidsData.map(x => [safeParseNumber(x[0]), safeParseNumber(x[1])]);
+    deepAsks = asksData.map(x => [safeParseNumber(x[0]), safeParseNumber(x[1])]);
+    // keep them sorted (bids desc, asks asc)
     deepBids.sort((a,b)=>b[0]-a[0]);
     deepAsks.sort((a,b)=>a[0]-b[0]);
     log(`Deep snapshot fetched: bids=${deepBids.length} asks=${deepAsks.length}`);
+    // immediately compute far walls after fetching
+    computeFarWalls();
   }catch(err){
     console.warn('deep snapshot failed', err);
-    log('Deep snapshot fetch failed');
+    log(`Deep snapshot fetch failed: ${err.message}`);
   }
 }
 
+/* ---------- COMPUTE FAR WALLS ---------- */
 function computeFarWalls(){
-  let currentPrice = lastPrice;
-  if(!currentPrice){
-    const bestBid = bids[0] ? safeParseNumber(bids[0][0]) : null;
-    const bestAsk = asks[0] ? safeParseNumber(asks[0][0]) : null;
-    if(bestBid && bestAsk) currentPrice = (bestBid + bestAsk) / 2;
-    else currentPrice = null;
-  }
-  if(!currentPrice || (!deepBids.length && !deepAsks.length)){
-    farBuysEl.innerHTML = '—';
-    farSellsEl.innerHTML = '—';
-    return;
-  }
-  const distPct = Math.max(0, safeParseNumber(radarDistPctInput.value));
-  const minQty = Math.max(0, safeParseNumber(radarMinQtyInput.value));
-  const buyThresholdPrice = currentPrice * (1 - distPct/100);
-  const sellsThresholdPrice = currentPrice * (1 + distPct/100);
-  const candidateBuys = deepBids
-    .filter(([p,q]) => p <= buyThresholdPrice && q >= minQty)
-    .sort((a,b)=>b[0]-a[0])
-    .slice(0, 50);
-  const buysSelected = candidateBuys.slice(0,5);
-  const candidateSells = deepAsks
-    .filter(([p,q]) => p >= sellsThresholdPrice && q >= minQty)
-    .sort((a,b)=>a[0]-b[0])
-    .slice(0,50);
-  const sellsSelected = candidateSells.slice(0,5);
-  if(buysSelected.length === 0) farBuysEl.innerHTML = '—';
-  else {
-    const rows = buysSelected.map(([p,q])=>{
-      const pctDist = ((currentPrice - p) / currentPrice) * 100;
-      return `<div><b>${formatPrice(p)}</b> — ${q.toFixed(4)}  <span style="opacity:0.65">(${pctDist.toFixed(2)}% below)</span></div>`;
-    });
-    farBuysEl.innerHTML = rows.join('');
-  }
-  if(sellsSelected.length === 0) farSellsEl.innerHTML = '—';
-  else {
-    const rows = sellsSelected.map(([p,q])=>{
-      const pctDist = ((p - currentPrice) / currentPrice) * 100;
-      return `<div><b>${formatPrice(p)}</b> — ${q.toFixed(4)}  <span style="opacity:0.65">(${pctDist.toFixed(2)}% above)</span></div>`;
-    });
-    farSellsEl.innerHTML = rows.join('');
+  try {
+    // determine current price to measure distance threshold
+    let currentPrice = lastPrice;
+    if(!currentPrice){
+      // fallback to top-of-book best mid
+      const bidsByPrice = bids.map(x=>[f(x[0]), f(x[1])]).sort((a,b)=>b[0]-a[0]);
+      const asksByPrice = asks.map(x=>[f(x[0]), f(x[1])]).sort((a,b)=>a[0]-b[0]);
+      const bestBid = bidsByPrice.length > 0 ? bidsByPrice[0][0] : null;
+      const bestAsk = asksByPrice.length > 0 ? asksByPrice[0][0] : null;
+      if(bestBid && bestAsk) currentPrice = (bestBid + bestAsk) / 2;
+      else currentPrice = null;
+    }
+    
+    if(!currentPrice){
+      farBuysEl.innerHTML = '<span style="opacity:0.6">Waiting for price data...</span>';
+      farSellsEl.innerHTML = '<span style="opacity:0.6">Waiting for price data...</span>';
+      return;
+    }
+    
+    if(!deepBids.length && !deepAsks.length){
+      farBuysEl.innerHTML = '<span style="opacity:0.6">Waiting for deep snapshot...</span>';
+      farSellsEl.innerHTML = '<span style="opacity:0.6">Waiting for deep snapshot...</span>';
+      return;
+    }
+
+    // read filter values
+    const distPct = Math.max(0, safeParseNumber(radarDistPctInput.value));
+    const minQty = Math.max(0, safeParseNumber(radarMinQtyInput.value));
+
+    // builds buys: bids with price <= currentPrice * (1 - distPct/100)
+    const buyThresholdPrice = currentPrice * (1 - distPct/100);
+    const sellsThresholdPrice = currentPrice * (1 + distPct/100);
+
+    // find buys below threshold and qty >= minQty (nearest first)
+    const candidateBuys = deepBids
+      .filter(([p,q]) => p <= buyThresholdPrice && q >= minQty)
+      .sort((a,b)=>b[0]-a[0]) // nearest below = highest price first
+      .slice(0, 50); // take a bit more to later compress into 5 near clusters
+
+    // cluster or compress buys that are "near to each other" (optional)
+    // We'll pick 5 nearest distinct-price entries (they asked "one after another near to each other")
+    const buysSelected = candidateBuys.slice(0,5);
+
+    // find sells above threshold and qty >= minQty (nearest first)
+    const candidateSells = deepAsks
+      .filter(([p,q]) => p >= sellsThresholdPrice && q >= minQty)
+      .sort((a,b)=>a[0]-b[0]) // nearest above = lowest price first
+      .slice(0,50);
+
+    const sellsSelected = candidateSells.slice(0,5);
+
+    // Render buys
+    if(buysSelected.length === 0) {
+      farBuysEl.innerHTML = `<span style="opacity:0.6">No large buys found (filter: ${distPct}% below, min qty: ${minQty})</span>`;
+    } else {
+      const rows = buysSelected.map(([p,q])=>{
+        const pctDist = ((currentPrice - p) / currentPrice) * 100;
+        return `<div style="margin-bottom:4px"><b>${formatPrice(p)}</b> — ${q.toFixed(4)}  <span style="opacity:0.65">(${pctDist.toFixed(2)}% below)</span></div>`;
+      });
+      farBuysEl.innerHTML = rows.join('');
+    }
+
+    // Render sells
+    if(sellsSelected.length === 0) {
+      farSellsEl.innerHTML = `<span style="opacity:0.6">No large sells found (filter: ${distPct}% above, min qty: ${minQty})</span>`;
+    } else {
+      const rows = sellsSelected.map(([p,q])=>{
+        const pctDist = ((p - currentPrice) / currentPrice) * 100;
+        return `<div style="margin-bottom:4px"><b>${formatPrice(p)}</b> — ${q.toFixed(4)}  <span style="opacity:0.65">(${pctDist.toFixed(2)}% above)</span></div>`;
+      });
+      farSellsEl.innerHTML = rows.join('');
+    }
+  } catch(e) {
+    console.error('computeFarWalls error:', e);
+    farBuysEl.innerHTML = '<span style="opacity:0.6">Error computing far walls</span>';
+    farSellsEl.innerHTML = '<span style="opacity:0.6">Error computing far walls</span>';
   }
 }
 
+/* ---------- SCHEDULE DEEP FETCH & RADAR ---------- */
 function startDeepPolling(){
+  // stop any existing timers
   if(deepFetchTimer) clearInterval(deepFetchTimer);
   if(farRadarTimer) clearInterval(farRadarTimer);
+
+  // immediate fetch then periodic
   fetchDeepSnapshot(symbol).catch(()=>{});
   deepFetchTimer = setInterval(()=>{ if(symbol) fetchDeepSnapshot(symbol); }, deepFetchIntervalMs);
-  computeFarWalls();
+
+  // compute far walls often (UI update)
+  computeFarWalls(); // immediate
   farRadarTimer = setInterval(()=>{ computeFarWalls(); }, farRadarRefreshMs);
 }
 
@@ -796,52 +935,56 @@ function stopDeepPolling(){
   farRadarTimer = null;
 }
 
+/* ---------- WIRING: start deep polling when connected & symbol changes ---------- */
 symbolSelect.addEventListener('change', (e)=>{
   symbol = e.target.value;
+  // if in connected state, refetch deep snapshot
   if(running && (useMode === 'rest' || useMode === 'both')){
     fetchDeepSnapshot(symbol);
   }
 });
 
-connectBtn.addEventListener('click', ()=>{
-  if(useMode === 'rest' || useMode === 'both'){
-    startDeepPolling();
-  }
+// Update far walls when filter inputs change
+radarDistPctInput.addEventListener('input', ()=>{
+  if(running) computeFarWalls();
+});
+radarMinQtyInput.addEventListener('input', ()=>{
+  if(running) computeFarWalls();
 });
 
-disconnectBtn.addEventListener('click', ()=>{
-  stopDeepPolling();
-});
-
+/* ---------- Safety: stop polling when page hidden ---------- */
 document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){
+    // pause heavy REST fetches
     if(deepFetchTimer) clearInterval(deepFetchTimer);
   } else {
+    // resume
     if(useMode === 'rest' || useMode === 'both'){
       if(!deepFetchTimer) deepFetchTimer = setInterval(()=>{ if(symbol) fetchDeepSnapshot(symbol); }, deepFetchIntervalMs);
     }
   }
 });
 
+/* ---------- Initial quick deep fetch attempt (if symbol loaded) ---------- */
 setTimeout(()=>{ if(symbolSelect.value) { symbol = symbolSelect.value; fetchDeepSnapshot(symbol); } }, 1200);
 
-setInterval(()=>{ try{ computeFarWalls(); }catch(e){} }, 2000);
+/* ---------- Optional: UI manual refresh control (not displayed) ---------- */
+function manualDeepRefresh(){
+  if(symbol) fetchDeepSnapshot(symbol);
+}
 
-/* ============================
-   HISTORICAL "HUGE WALLS" SEED (optional)
-   We will also seed deep walls rendering once deep snapshot arrives.
-   ============================ */
-
-/* ============================
-   INITIALIZE UI & READY
-   ============================ */
-clearAll();
-updateUI();
-log('Dashboard ready. Click Connect.');
-
-// light UI updater
-setInterval(()=>{ scheduleUI(); }, 1000);
-
+/* ---------- Final: ensure computeFarWalls uses latest data by scheduling regular UI update ---------- */
+// This is handled by farRadarTimer in startDeepPolling, but we also update it in the main UI updater
+setInterval(()=>{ 
+  try{ 
+    if(running && (useMode === 'rest' || useMode === 'both')) {
+      computeFarWalls(); 
+    }
+  }catch(e){
+    console.warn('Far walls update error:', e);
+  } 
+}, 3000);
 </script>
 </body>
 </html>
+
